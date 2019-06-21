@@ -4,30 +4,29 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"os"
 	"strings"
 
 	"github.com/aphistic/sweet"
+	"github.com/go-nacelle/grpcbase/internal/proto"
+	"github.com/go-nacelle/nacelle"
 	. "github.com/onsi/gomega"
 	"google.golang.org/grpc"
-
-	"github.com/go-nacelle/grpcbase/internal"
-	"github.com/go-nacelle/nacelle"
 )
 
 type ServerSuite struct{}
 
+var testConfig = nacelle.NewConfig(nacelle.NewTestEnvSourcer(map[string]string{
+	"grpc_port": "0",
+}))
+
 func (s *ServerSuite) TestServeAndStop(t sweet.T) {
 	server := makeGRPCServer(func(config nacelle.Config, server *grpc.Server) error {
-		internal.RegisterTestServiceServer(server, &upperService{})
+		proto.RegisterTestServiceServer(server, &upperService{})
 
 		return nil
 	})
 
-	os.Setenv("GRPC_PORT", "0")
-	defer os.Clearenv()
-
-	err := server.Init(makeConfig(&Config{}))
+	err := server.Init(testConfig)
 	Expect(err).To(BeNil())
 
 	go server.Start()
@@ -38,9 +37,9 @@ func (s *ServerSuite) TestServeAndStop(t sweet.T) {
 	Expect(err).To(BeNil())
 	defer conn.Close()
 
-	client := internal.NewTestServiceClient(conn)
+	client := proto.NewTestServiceClient(conn)
 
-	resp, err := client.ToUpper(context.Background(), &internal.UpperRequest{Text: "foobar"})
+	resp, err := client.ToUpper(context.Background(), &proto.UpperRequest{Text: "foobar"})
 	Expect(err).To(BeNil())
 	Expect(resp.GetText()).To(Equal("FOOBAR"))
 }
@@ -50,23 +49,17 @@ func (s *ServerSuite) TestBadInjection(t sweet.T) {
 	server.Services = makeBadContainer()
 	server.Health = nacelle.NewHealth()
 
-	os.Setenv("GRPC_PORT", "0")
-	defer os.Clearenv()
-
-	err := server.Init(makeConfig(&Config{}))
+	err := server.Init(testConfig)
 	Expect(err.Error()).To(ContainSubstring("ServiceA"))
 }
 
 func (s *ServerSuite) TestInitError(t sweet.T) {
 	server := makeGRPCServer(func(config nacelle.Config, server *grpc.Server) error {
-		return fmt.Errorf("utoh")
+		return fmt.Errorf("oops")
 	})
 
-	os.Setenv("GRPC_PORT", "0")
-	defer os.Clearenv()
-
-	err := server.Init(makeConfig(&Config{}))
-	Expect(err).To(MatchError("utoh"))
+	err := server.Init(testConfig)
+	Expect(err).To(MatchError("oops"))
 }
 
 //
@@ -85,16 +78,19 @@ func getDynamicPort(listener net.Listener) int {
 }
 
 //
-// Service Impl
+// Service Implementation
 
 type upperService struct{}
 
-func (us *upperService) ToUpper(ctx context.Context, r *internal.UpperRequest) (*internal.UpperResponse, error) {
-	return &internal.UpperResponse{Text: strings.ToUpper(r.GetText())}, nil
+func (us *upperService) ToUpper(ctx context.Context, r *proto.UpperRequest) (*proto.UpperResponse, error) {
+	return &proto.UpperResponse{Text: strings.ToUpper(r.GetText())}, nil
 }
 
 //
 // Bad Injection
+
+type A struct{ X int }
+type B struct{ X float64 }
 
 type badInjectionInitializer struct {
 	ServiceA *A `service:"A"`
@@ -102,4 +98,10 @@ type badInjectionInitializer struct {
 
 func (i *badInjectionInitializer) Init(nacelle.Config, *grpc.Server) error {
 	return nil
+}
+
+func makeBadContainer() nacelle.ServiceContainer {
+	container := nacelle.NewServiceContainer()
+	container.Set("A", &B{})
+	return container
 }

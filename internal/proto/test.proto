@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package internal;
+package proto;
 
 service TestService {
     rpc ToUpper(UpperRequest) returns (UpperResponse) {}
