@@ -1,5 +1,7 @@
 package grpcbase
 
+//go:generate go-mockgen -f google.golang.org/grpc/stats -i Handler -o stats_handler_mock_test.go
+
 import (
 	"testing"
 
