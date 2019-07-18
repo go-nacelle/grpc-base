@@ -4,7 +4,7 @@ Abstract gRPC server process for nacelle.
 
 ---
 
-For a more full-featured gRPC server framework built on nacelle, see [scarf](https://github.com/go-nacelle/scarf).
+For a more full-featured gRPC server framework built on nacelle, see [scarf](https://nacelle.dev/docs/frameworks/scarf).
 
 ### Usage
 
