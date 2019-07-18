@@ -1,10 +1,10 @@
 # gRPC Base Example
 
-A trivial example application to showcase the [grpcbase](https://github.com/go-nacelle/grpcbase) library.
+A trivial example application to showcase the [grpcbase](https://nacelle.dev/docs/base-processes/grpcbase) library.
 
 ## Overview
 
-This example application uses Redis to provide a simple string get/set API over gRPC. The **main** function boots [nacelle](https://github.com/go-nacelle/nacelle) with a initializer that dials Redis and a server initializer for the process provided by this library. The connection created by the former is injected into the later.
+This example application uses Redis to provide a simple string get/set API over gRPC. The **main** function boots [nacelle](https://nacelle.dev/docs/core) with a initializer that dials Redis and a server initializer for the process provided by this library. The connection created by the former is injected into the later.
 
 ## Building and Running
 
