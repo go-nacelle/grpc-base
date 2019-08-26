@@ -56,11 +56,11 @@ ServerInitializerFunc(func(config nacelle.Config, server *grpc.Server) error {
 The following options can be supplied to the server constructor to tune its behavior.
 
 <dl>
-  <dd>WithTagModifiers</dd>
-  <dt><a href="https://godoc.org/github.com/go-nacelle/grpcbase#WithTagModifiers">WithTagModifiers</a> registers the tag modifiers to be used when loading process configuration (see [below](#Configuration)). This can be used to change default hosts and ports, or prefix all target environment variables in the case where more than one gRPC server is registered per application (e.g. health server and application server, data plane and control plane server).</dt>
+  <dt>WithTagModifiers</dt>
+  <dd><a href="https://godoc.org/github.com/go-nacelle/grpcbase#WithTagModifiers">WithTagModifiers</a> registers the tag modifiers to be used when loading process configuration (see <a href="https://godoc.org/github.com/go-nacelle/grpcbase#Configuration">below</a>). This can be used to change default hosts and ports, or prefix all target environment variables in the case where more than one gRPC server is registered per application (e.g. health server and application server, data plane and control plane server).</dd>
 
-  <dd>WithServerOptions</dd>
-  <dt><a href="https://godoc.org/github.com/go-nacelle/grpcbase#WithServerOptions">WithServerOptions</a> registers options to be supplied directly to the gRPC server constructor.</dt>
+  <dt>WithServerOptions</dt>
+  <dd><a href="https://godoc.org/github.com/go-nacelle/grpcbase#WithServerOptions">WithServerOptions</a> registers options to be supplied directly to the gRPC server constructor.</dd>
 </dl>
 
 ### Configuration
