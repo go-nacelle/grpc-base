@@ -5,56 +5,54 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"testing"
 
-	"github.com/aphistic/sweet"
-	. "github.com/efritz/go-mockgen/matchers"
+	mockassert "github.com/derision-test/go-mockgen/testutil/assert"
 	"github.com/go-nacelle/grpcbase/internal/proto"
 	"github.com/go-nacelle/nacelle"
-	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/stats"
 )
-
-type ServerSuite struct{}
 
 var testConfig = nacelle.NewConfig(nacelle.NewTestEnvSourcer(map[string]string{
 	"grpc_port": "0",
 }))
 
-func (s *ServerSuite) TestServeAndStop(t sweet.T) {
+func TestServeAndStop(t *testing.T) {
 	server := makeGRPCServer(func(config nacelle.Config, server *grpc.Server) error {
 		proto.RegisterTestServiceServer(server, &upperService{})
 		return nil
 	})
 
 	err := server.Init(testConfig)
-	Expect(err).To(BeNil())
+	assert.Nil(t, err)
 
 	go server.Start()
 	defer server.Stop()
 
 	// Hack internals to get the dynamic port (don't bind to one on host)
 	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", getDynamicPort(server.listener)), grpc.WithInsecure())
-	Expect(err).To(BeNil())
+	assert.Nil(t, err)
 	defer conn.Close()
 
 	client := proto.NewTestServiceClient(conn)
 
 	resp, err := client.ToUpper(context.Background(), &proto.UpperRequest{Text: "foobar"})
-	Expect(err).To(BeNil())
-	Expect(resp.GetText()).To(Equal("FOOBAR"))
+	assert.Nil(t, err)
+	assert.Equal(t, "FOOBAR", resp.GetText())
 }
 
-func (s *ServerSuite) TestBadInjection(t sweet.T) {
+func TestBadInjection(t *testing.T) {
 	server := NewServer(&badInjectionInitializer{})
 	server.Services = makeBadContainer()
 	server.Health = nacelle.NewHealth()
 
 	err := server.Init(testConfig)
-	Expect(err.Error()).To(ContainSubstring("ServiceA"))
+	assert.Contains(t, err.Error(), "ServiceA")
 }
 
-func (s *ServerSuite) TestTagModifiers(t sweet.T) {
+func TestTagModifiers(t *testing.T) {
 	server := NewServer(
 		ServerInitializerFunc(func(config nacelle.Config, server *grpc.Server) error {
 			return nil
@@ -70,11 +68,11 @@ func (s *ServerSuite) TestTagModifiers(t sweet.T) {
 		"prefix_grpc_port": "1234",
 	})))
 
-	Expect(err).To(BeNil())
-	Expect(server.port).To(Equal(1234))
+	assert.Nil(t, err)
+	assert.Equal(t, 1234, server.port)
 }
 
-func (s *ServerSuite) TestServerOptions(t sweet.T) {
+func TestServerOptions(t *testing.T) {
 	handler := NewMockHandler()
 	handler.TagRPCFunc.SetDefaultHook(func(ctx context.Context, info *stats.RPCTagInfo) context.Context { return ctx })
 	handler.TagConnFunc.SetDefaultHook(func(ctx context.Context, info *stats.ConnTagInfo) context.Context { return ctx })
@@ -92,36 +90,36 @@ func (s *ServerSuite) TestServerOptions(t sweet.T) {
 	server.Health = nacelle.NewHealth()
 
 	err := server.Init(testConfig)
-	Expect(err).To(BeNil())
+	assert.Nil(t, err)
 
 	go server.Start()
 	defer server.Stop()
 
 	// Hack internals to get the dynamic port (don't bind to one on host)
 	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", getDynamicPort(server.listener)), grpc.WithInsecure())
-	Expect(err).To(BeNil())
+	assert.Nil(t, err)
 	defer conn.Close()
 
 	client := proto.NewTestServiceClient(conn)
 
 	resp, err := client.ToUpper(context.Background(), &proto.UpperRequest{Text: "foobar"})
-	Expect(err).To(BeNil())
-	Expect(resp.GetText()).To(Equal("FOOBAR"))
+	assert.Nil(t, err)
+	assert.Equal(t, "FOOBAR", resp.GetText())
 
 	// Ensure stats handler was registered
-	Expect(handler.TagRPCFunc).To(BeCalled())
-	Expect(handler.HandleRPCFunc).To(BeCalled())
-	Expect(handler.TagConnFunc).To(BeCalled())
-	Expect(handler.HandleConnFunc).To(BeCalled())
+	mockassert.Called(t, handler.TagRPCFunc)
+	mockassert.Called(t, handler.HandleRPCFunc)
+	mockassert.Called(t, handler.TagConnFunc)
+	mockassert.Called(t, handler.HandleConnFunc)
 }
 
-func (s *ServerSuite) TestInitError(t sweet.T) {
+func TestInitError(t *testing.T) {
 	server := makeGRPCServer(func(config nacelle.Config, server *grpc.Server) error {
 		return fmt.Errorf("oops")
 	})
 
 	err := server.Init(testConfig)
-	Expect(err).To(MatchError("oops"))
+	assert.EqualError(t, err, "oops")
 }
 
 //
