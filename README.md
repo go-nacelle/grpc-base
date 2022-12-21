@@ -1,4 +1,8 @@
-# Nacelle Base gRPC Process [![GoDoc](https://godoc.org/github.com/go-nacelle/grpcbase?status.svg)](https://godoc.org/github.com/go-nacelle/grpcbase) [![CircleCI](https://circleci.com/gh/go-nacelle/grpcbase.svg?style=svg)](https://circleci.com/gh/go-nacelle/grpcbase) [![Coverage Status](https://coveralls.io/repos/github/go-nacelle/grpcbase/badge.svg?branch=master)](https://coveralls.io/github/go-nacelle/grpcbase?branch=master)
+# Nacelle Base gRPC Process
+
+[![PkgGoDev](https://pkg.go.dev/badge/badge/github.com/go-nacelle/grpcbase.svg)](https://pkg.go.dev/github.com/go-nacelle/grpcbase)
+[![Build status](https://github.com/go-nacelle/grpcbase/actions/workflows/test.yml/badge.svg)](https://github.com/go-nacelle/grpcbase/actions/workflows/test.yml)
+[![Latest release](https://img.shields.io/github/release/go-nacelle/grpcbase.svg)](https://github.com/go-nacelle/grpcbase/releases/)
 
 Abstract gRPC server process for nacelle.
 
