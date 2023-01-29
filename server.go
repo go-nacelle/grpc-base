@@ -84,7 +84,7 @@ func (s *Server) Init(ctx context.Context) (err error) {
 	return
 }
 
-func (s *Server) Start() error {
+func (s *Server) Start(ctx context.Context) error {
 	defer s.listener.Close()
 
 	s.healthStatus.Update(true)
@@ -103,7 +103,7 @@ func (s *Server) Start() error {
 	return nil
 }
 
-func (s *Server) Stop() error {
+func (s *Server) Stop(ctx context.Context) error {
 	s.once.Do(func() {
 		s.Logger.Info("Shutting down gRPC server")
 		close(s.stopped)
