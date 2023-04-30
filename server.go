@@ -1,20 +1,24 @@
 package grpcbase
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"sync"
 
-	"github.com/go-nacelle/nacelle"
+	"github.com/go-nacelle/nacelle/v2"
+	"github.com/go-nacelle/process/v2"
+	"github.com/go-nacelle/service/v2"
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
 )
 
 type (
 	Server struct {
-		Logger        nacelle.Logger           `service:"logger"`
-		Services      nacelle.ServiceContainer `service:"services"`
-		Health        nacelle.Health           `service:"health"`
+		Config        *nacelle.Config           `service:"config"`
+		Logger        nacelle.Logger            `service:"logger"`
+		Services      *nacelle.ServiceContainer `service:"services"`
+		Health        *nacelle.Health           `service:"health"`
 		tagModifiers  []nacelle.TagModifier
 		initializer   ServerInitializer
 		listener      *net.TCPListener
@@ -25,17 +29,18 @@ type (
 		port          int
 		serverOptions []grpc.ServerOption
 		healthToken   healthToken
+		healthStatus  *process.HealthComponentStatus
 	}
 
 	ServerInitializer interface {
-		Init(nacelle.Config, *grpc.Server) error
+		Init(context.Context, *grpc.Server) error
 	}
 
-	ServerInitializerFunc func(nacelle.Config, *grpc.Server) error
+	ServerInitializerFunc func(context.Context, *grpc.Server) error
 )
 
-func (f ServerInitializerFunc) Init(config nacelle.Config, server *grpc.Server) error {
-	return f(config, server)
+func (f ServerInitializerFunc) Init(ctx context.Context, server *grpc.Server) error {
+	return f(ctx, server)
 }
 
 func NewServer(initializer ServerInitializer, configs ...ConfigFunc) *Server {
@@ -51,13 +56,15 @@ func NewServer(initializer ServerInitializer, configs ...ConfigFunc) *Server {
 	}
 }
 
-func (s *Server) Init(config nacelle.Config) (err error) {
-	if err := s.Health.AddReason(s.healthToken); err != nil {
+func (s *Server) Init(ctx context.Context) (err error) {
+	healthStatus, err := s.Health.Register(s.healthToken)
+	if err != nil {
 		return err
 	}
+	s.healthStatus = healthStatus
 
 	grpcConfig := &Config{}
-	if err = config.Load(grpcConfig, s.tagModifiers...); err != nil {
+	if err = s.Config.Load(grpcConfig, s.tagModifiers...); err != nil {
 		return err
 	}
 
@@ -66,23 +73,21 @@ func (s *Server) Init(config nacelle.Config) (err error) {
 		return
 	}
 
-	if err := s.Services.Inject(s.initializer); err != nil {
+	if err := service.Inject(ctx, s.Services, s.initializer); err != nil {
 		return err
 	}
 
 	s.host = grpcConfig.GRPCHost
 	s.port = grpcConfig.GRPCPort
 	s.server = grpc.NewServer(s.serverOptions...)
-	err = s.initializer.Init(config, s.server)
+	err = s.initializer.Init(ctx, s.server)
 	return
 }
 
-func (s *Server) Start() error {
+func (s *Server) Start(ctx context.Context) error {
 	defer s.listener.Close()
 
-	if err := s.Health.RemoveReason(s.healthToken); err != nil {
-		return err
-	}
+	s.healthStatus.Update(true)
 
 	s.Logger.Info("Serving gRPC on %s:%d", s.host, s.port)
 
@@ -98,7 +103,7 @@ func (s *Server) Start() error {
 	return nil
 }
 
-func (s *Server) Stop() error {
+func (s *Server) Stop(ctx context.Context) error {
 	s.once.Do(func() {
 		s.Logger.Info("Shutting down gRPC server")
 		close(s.stopped)
