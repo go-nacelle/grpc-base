@@ -30,8 +30,8 @@ func TestServeAndStop(t *testing.T) {
 	err := server.Init(ctx)
 	assert.Nil(t, err)
 
-	go server.Start()
-	defer server.Stop()
+	go server.Start(ctx)
+	defer server.Stop(ctx)
 
 	// Hack internals to get the dynamic port (don't bind to one on host)
 	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", getDynamicPort(server.listener)), grpc.WithInsecure())
@@ -100,8 +100,8 @@ func TestServerOptions(t *testing.T) {
 	err := server.Init(ctx)
 	assert.Nil(t, err)
 
-	go server.Start()
-	defer server.Stop()
+	go server.Start(ctx)
+	defer server.Stop(ctx)
 
 	// Hack internals to get the dynamic port (don't bind to one on host)
 	conn, err := grpc.Dial(fmt.Sprintf("localhost:%d", getDynamicPort(server.listener)), grpc.WithInsecure())
