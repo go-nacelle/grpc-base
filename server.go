@@ -84,7 +84,7 @@ func (s *Server) Init(ctx context.Context) (err error) {
 	return
 }
 
-func (s *Server) Start(ctx context.Context) error {
+func (s *Server) Run(ctx context.Context) error {
 	defer s.listener.Close()
 
 	s.healthStatus.Update(true)
